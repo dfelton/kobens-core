@@ -1,5 +1,6 @@
 {
     "name": "kobens/kobens-core",
+    "version" : "0.0.1",
     "description": "Core framework for facilitating trades on an exchange.",
     "type": "library",
     "license": "BSD-3-Clause",
