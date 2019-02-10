@@ -1,0 +1,14 @@
+{
+    "name": "kobens/kobens-core",
+    "description": "Core framework for facilitating trades on an exchange.",
+    "type": "library",
+    "license": "BSD-3-Clause",
+    "authors": [
+        {
+            "name": "Darren Felton",
+            "email": "darren_felton@hotmail.com"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {}
+}
