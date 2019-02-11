@@ -10,7 +10,7 @@ interface ActionInterface extends \Kobens\Core\Config\RuntimeInterface
     public function __construct(
         \Kobens\Core\App $app
     );
-    
+
     /**
      * @return self
      */
