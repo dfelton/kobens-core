@@ -35,10 +35,15 @@ abstract class App
     public function __construct()
     {
         $this->cli = new \CliArgs\CliArgs($this->cliArgs);
+        $output = new \Kobens\Core\Output();
+        if ($this->cli->isFlagExist('h')) {
+            $output->write($this->cli->getHelp());
+            exit;
+        }
         $config = $this->getConfig();
         $this->appResources = new \Kobens\Core\App\Resources(
             new \Kobens\Core\Db\Adapter($config->get('database')->toArray()),
-            new \Kobens\Core\Output(),
+            $output,
             $config
         );
     }
