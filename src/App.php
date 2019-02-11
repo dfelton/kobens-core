@@ -2,7 +2,7 @@
 
 namespace Kobens\Core;
 
-abstract class App implements ActionInterface
+abstract class App
 {
     /**
      * @var \CliArgs\CliArgs
