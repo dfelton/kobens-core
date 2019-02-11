@@ -94,6 +94,7 @@ abstract class App
         foreach ($this->getAvailableActions() as $actionName => $actionInfo) {
             $this->output->write(sprintf("\t\"%s\"\t\"%s\"", $actionName, $actionInfo['description']));
         }
+        return $this;
     }
 
 
