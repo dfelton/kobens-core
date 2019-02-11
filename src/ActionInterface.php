@@ -5,14 +5,14 @@ namespace Kobens\Core;
 interface ActionInterface extends \Kobens\Core\Config\RuntimeInterface
 {
     /**
-     * @param \Kobens\Core\App $app
+     * @param \Kobens\Core\App\ResourcesInterface $resourcesInterface
      */
     public function __construct(
-        \Kobens\Core\App $app
+        \Kobens\Core\App\ResourcesInterface $resourcesInterface
     );
 
     /**
-     * @return self
+     * @return ActionInterface
      */
-    public function execute() : self;
+    public function execute() : ActionInterface;
 }

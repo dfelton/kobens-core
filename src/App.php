@@ -2,39 +2,17 @@
 
 namespace Kobens\Core;
 
-abstract class App
+abstract class App implements ActionInterface
 {
-    /**
-     * Allowed CLI actions. Populate / override in child class.
-     *
-     * @var array
-     */
-    protected $actionClassMap = [];
-
-    /**
-     * @var \Kobens\Core\ActionInterface
-     */
-    protected $action;
-
-    /**
-     * @var \Kobens\Core\Db\Adapter
-     */
-    protected $db;
-
-    /**
-     * @var \Zend\Config\Config
-     */
-    protected $config;
-
     /**
      * @var \CliArgs\CliArgs
      */
     protected $cli;
 
     /**
-     * @var \Kobens\Core\Output
+     * @var \Kobens\Core\App\ResourcesInterface
      */
-    protected $output;
+    protected $appResources;
 
     /**
      * @var array
@@ -57,14 +35,23 @@ abstract class App
     public function __construct()
     {
         $this->cli = new \CliArgs\CliArgs($this->cliArgs);
-        $this->db = new \Kobens\Core\Db\Adapter($this->getConfig()->get('database')->toArray());
-        $this->output = new \Kobens\Core\Output();
+        $config = $this->getConfig();
+        $this->appResources = new \Kobens\Core\App\Resources(
+            new \Kobens\Core\Db\Adapter($config->get('database')->toArray()),
+            new \Kobens\Core\Output(),
+            $config
+        );
     }
+
+    /**
+     * @return array
+     */
+    abstract protected function getAvailableActions() : array;
 
     final public function run()
     {
         if ($this->cli->isFlagExist('h')) {
-            $this->output->write($this->cli->getHelp());
+            $this->appResources->getOutput()->write($this->cli->getHelp());
         } else {
             try {
                 $action = $this->getAction();
@@ -74,9 +61,9 @@ abstract class App
                 }
                 $action->execute();
             } catch (\Kobens\Core\Exception\RuntimeArgsInvalidException $e) {
-                $this->output->write($e->getMessage());
+                $this->appResources->getOutput()->write($e->getMessage());
             } catch (\Exception $e) {
-                $this->output->writeException($e);
+                $this->appResources->getOutput()->writeException($e);
             }
         }
     }
@@ -86,45 +73,29 @@ abstract class App
      * @throws Exception\ActionInvalidException
      * @return \Kobens\Core\ActionInterface
      */
-    protected function getAction() : \Kobens\Core\ActionInterface
+    private function getAction() : \Kobens\Core\ActionInterface
     {
         $action = (string) $this->cli->getArg('action');
         $action = trim($action);
         if ($action === '') {
             throw new Exception\ActionRequiredException();
-        } elseif (!\array_key_exists($action, $this->actionClassMap)) {
+        }
+        $actions = $this->getAvailableActions();
+        if (!\array_key_exists($action, $actions)) {
             throw new Exception\ActionInvalidException($action);
         }
-        return new $this->actionClassMap[$action]($this);
+        return new $actions[$action]($this->appResources);
     }
 
     /**
      * @return \Zend\Config\Config
      */
-    public function getConfig()
+    private function getConfig() : \Zend\Config\Config
     {
-        if (is_null($this->config)) {
-            $reader = new \Zend\Config\Reader\Xml();
-            $filename = (string) $this->cli->getArg('config');
-            $array = $reader->fromFile($filename);
-            $this->config = new \Zend\Config\Config($array);
-        }
-        return $this->config;
+        $filename = (string) $this->cli->getArg('config');
+        $reader = new \Zend\Config\Reader\Xml();
+        $array = $reader->fromFile($filename);
+        return new \Zend\Config\Config($array);
     }
 
-    /**
-     * @return \Kobens\Core\Output
-     */
-    public function getOutput() : \Kobens\Core\Output
-    {
-        return $this->output;
-    }
-
-    /**
-     * @return \Kobens\Core\Db\Adapter
-     */
-    public function getDb() : \Kobens\Core\Db\Adapter
-    {
-        return $this->db;
-    }
 }
