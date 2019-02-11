@@ -31,6 +31,9 @@ abstract class App
             'alias' => 'a',
             'help' => 'What action to perform. Use "showActions" to list valid actions',
         ],
+        'showActions' => [
+            'help' => 'Show all available actions',
+        ],
         'config' => [
             'alias' => 'c',
             'help' => 'What config file to load environment settings from',
@@ -62,6 +65,8 @@ abstract class App
     {
         if ($this->cli->isFlagExist('h')) {
             $this->output->write($this->cli->getHelp());
+        } elseif ($this->cli->isFlagExist('showActions')) {
+            $this->showActionHelp();
         } else {
             $this->init();
             try {
@@ -80,6 +85,19 @@ abstract class App
     }
 
     /**
+     * @return App
+     */
+    private function showActionHelp() : App
+    {
+        $actions = $this->getAvailableActions();
+        $this->output->write('Available Actions:');
+        foreach ($this->getAvailableActions() as $actionName => $actionInfo) {
+            $this->output->write(sprintf("\t\"%s\"\t\"%s\"", $actionName, $actionInfo['description']));
+        }
+    }
+
+
+    /**
      * @throws Exception\ActionRequiredException
      * @throws Exception\ActionInvalidException
      * @return \Kobens\Core\ActionInterface
@@ -95,7 +113,7 @@ abstract class App
         if (!\array_key_exists($action, $actions)) {
             throw new Exception\ActionInvalidException($action);
         }
-        return new $actions[$action]($this->appResources);
+        return new $actions[$action]['class']($this->appResources);
     }
 
     /**
