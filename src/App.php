@@ -15,6 +15,11 @@ abstract class App
     protected $appResources;
 
     /**
+     * @var \Kobens\Core\Output
+     */
+    protected $output;
+
+    /**
      * @var array
      */
     protected $cliArgs = [
@@ -35,15 +40,15 @@ abstract class App
     public function __construct()
     {
         $this->cli = new \CliArgs\CliArgs($this->cliArgs);
-        $output = new \Kobens\Core\Output();
-        if ($this->cli->isFlagExist('h')) {
-            $output->write($this->cli->getHelp());
-            exit;
-        }
+        $this->output = new \Kobens\Core\Output();
+    }
+
+    private function init()
+    {
         $config = $this->getConfig();
         $this->appResources = new \Kobens\Core\App\Resources(
             new \Kobens\Core\Db\Adapter($config->get('database')->toArray()),
-            $output,
+            $this->output,
             $config
         );
     }
@@ -56,8 +61,9 @@ abstract class App
     final public function run()
     {
         if ($this->cli->isFlagExist('h')) {
-            $this->appResources->getOutput()->write($this->cli->getHelp());
+            $this->output->write($this->cli->getHelp());
         } else {
+            $this->init();
             try {
                 $action = $this->getAction();
                 if ($action->getRuntimeArgOptions()) {
@@ -66,9 +72,9 @@ abstract class App
                 }
                 $action->execute();
             } catch (\Kobens\Core\Exception\RuntimeArgsInvalidException $e) {
-                $this->appResources->getOutput()->write($e->getMessage());
+                $this->output->write($e->getMessage());
             } catch (\Exception $e) {
-                $this->appResources->getOutput()->writeException($e);
+                $this->output->writeException($e);
             }
         }
     }
