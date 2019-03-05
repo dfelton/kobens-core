@@ -3,11 +3,9 @@
 namespace Kobens\Core;
 
 use CliArgs\CliArgs;
-use Kobens\Core\ActionInterface;
 use Kobens\Core\App\Resources;
 use Kobens\Core\App\ResourcesInterface;
 use Kobens\Core\Exception\RuntimeArgsInvalidException;
-use Kobens\Core\Output;
 use Zend\Config\Config;
 use Zend\Config\Reader\Xml;
 
