@@ -46,13 +46,11 @@ abstract class App
         $this->output = new \Kobens\Core\Output();
     }
 
-    private function init()
+    private function init() : void
     {
-        $config = $this->getConfig();
         $this->appResources = new \Kobens\Core\App\Resources(
-            new \Kobens\Core\Db\Adapter($config->get('database')->toArray()),
+            $this->getConfig(),
             $this->output,
-            $config
         );
     }
 
@@ -61,7 +59,7 @@ abstract class App
      */
     abstract protected function getAvailableActions() : array;
 
-    final public function run()
+    final public function run() : void
     {
         if ($this->cli->isFlagExist('h')) {
             $this->output->write($this->cli->getHelp());

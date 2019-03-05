@@ -2,7 +2,8 @@
 
 namespace Kobens\Core\Db;
 
-use \Zend\Db\Adapter\Adapter as ZendAdapter;
+use Zend\Db\Adapter\Adapter as ZendAdapter;
+use Zend\Db\Sql\Sql;
 
 class Adapter
 {
@@ -18,18 +19,12 @@ class Adapter
 
     /**
      * Return a new Sql object
-     *
-     * @return \Zend\Db\Sql\Sql
      */
     public function getSql()
     {
-        return new \Zend\Db\Sql\Sql($this->getAdapter());
+        return new Sql($this->getAdapter());
     }
 
-    /**
-     * @throws \Exception
-     * @return ZendAdapter
-     */
     public function getAdapter() : ZendAdapter
     {
         return $this->adapter;
