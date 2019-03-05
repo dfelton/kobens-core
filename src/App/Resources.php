@@ -46,4 +46,5 @@ class Resources implements ResourcesInterface
     {
         return $this->db;
     }
+
 }

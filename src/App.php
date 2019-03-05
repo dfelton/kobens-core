@@ -2,20 +2,29 @@
 
 namespace Kobens\Core;
 
+use CliArgs\CliArgs;
+use Kobens\Core\ActionInterface;
+use Kobens\Core\App\Resources;
+use Kobens\Core\App\ResourcesInterface;
+use Kobens\Core\Exception\RuntimeArgsInvalidException;
+use Kobens\Core\Output;
+use Zend\Config\Config;
+use Zend\Config\Reader\Xml;
+
 abstract class App
 {
     /**
-     * @var \CliArgs\CliArgs
+     * @var CliArgs
      */
     protected $cli;
 
     /**
-     * @var \Kobens\Core\App\ResourcesInterface
+     * @var ResourcesInterface
      */
     protected $appResources;
 
     /**
-     * @var \Kobens\Core\Output
+     * @var Output
      */
     protected $output;
 
@@ -42,21 +51,18 @@ abstract class App
 
     public function __construct()
     {
-        $this->cli = new \CliArgs\CliArgs($this->cliArgs);
-        $this->output = new \Kobens\Core\Output();
+        $this->cli = new CliArgs($this->cliArgs);
+        $this->output = new Output();
     }
 
     private function init() : void
     {
-        $this->appResources = new \Kobens\Core\App\Resources(
-            $this->getConfig(),
+        $this->appResources = new Resources(
             $this->output,
+            $this->getConfig(),
         );
     }
 
-    /**
-     * @return array
-     */
     abstract protected function getAvailableActions() : array;
 
     final public function run() : void
@@ -70,11 +76,11 @@ abstract class App
             try {
                 $action = $this->getAction();
                 if ($action->getRuntimeArgOptions()) {
-                    $args = new \CliArgs\CliArgs($action->getRuntimeArgOptions());
+                    $args = new CliArgs($action->getRuntimeArgOptions());
                     $action->setRuntimeArgs($args->getArgs());
                 }
                 $action->execute();
-            } catch (\Kobens\Core\Exception\RuntimeArgsInvalidException $e) {
+            } catch (RuntimeArgsInvalidException $e) {
                 $this->output->write($e->getMessage());
             } catch (\Exception $e) {
                 $this->output->writeException($e);
@@ -82,15 +88,15 @@ abstract class App
         }
     }
 
-    /**
-     * @return App
-     */
     private function showActionHelp() : App
     {
-        $actions = $this->getAvailableActions();
         $this->output->write('Available Actions:');
         foreach ($this->getAvailableActions() as $actionName => $actionInfo) {
-            $this->output->write(sprintf("\t\"%s\"\t\"%s\"", $actionName, $actionInfo['description']));
+            $this->output->write(\sprintf(
+                "\t\"%s\"\t\"%s\"",
+                $actionName,
+                $actionInfo['description']
+            ));
         }
         return $this;
     }
@@ -99,12 +105,11 @@ abstract class App
     /**
      * @throws Exception\ActionRequiredException
      * @throws Exception\ActionInvalidException
-     * @return \Kobens\Core\ActionInterface
      */
-    private function getAction() : \Kobens\Core\ActionInterface
+    private function getAction() : ActionInterface
     {
         $action = (string) $this->cli->getArg('action');
-        $action = trim($action);
+        $action = \trim($action);
         if ($action === '') {
             throw new Exception\ActionRequiredException();
         }
@@ -115,15 +120,10 @@ abstract class App
         return new $actions[$action]['class']($this->appResources);
     }
 
-    /**
-     * @return \Zend\Config\Config
-     */
-    private function getConfig() : \Zend\Config\Config
+    private function getConfig() : Config
     {
-        $filename = (string) $this->cli->getArg('config');
-        $reader = new \Zend\Config\Reader\Xml();
-        $array = $reader->fromFile($filename);
-        return new \Zend\Config\Config($array);
+        $array = (new Xml())->fromFile((string) $this->cli->getArg('config'));
+        return new Config($array);
     }
 
 }
