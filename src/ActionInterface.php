@@ -8,5 +8,5 @@ interface ActionInterface extends \Kobens\Core\Config\RuntimeInterface
         \Kobens\Core\App\ResourcesInterface $resourcesInterface
     );
 
-    public function execute() : ActionInterface;
+    public function execute() : void;
 }
