@@ -12,9 +12,7 @@ class Config
      */
     protected static $config;
 
-    public function __construct(
-        $filename = null
-    )
+    public function __construct(string $filename = null)
     {
         if (static::$config === null && $filename === null) {
             throw new \Exception(\sprintf(
