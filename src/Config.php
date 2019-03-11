@@ -12,7 +12,12 @@ class Config
      */
     protected static $config;
 
-    public function __construct(string $filename = null)
+    /**
+     * @var string
+     */
+    protected static $root;
+
+    public function __construct(string $filename = null, string $root = null)
     {
         if (static::$config === null && $filename === null) {
             throw new \Exception(\sprintf(
@@ -26,8 +31,20 @@ class Config
                 __CLASS__
             ));
         } elseif (static::$config === null && $filename !== null) {
+            if ($root === null) {
+                throw new \Exception(\sprintf(
+                    'First time instantiation of "%s" requires specifying application root',
+                    __CLASS__
+                ));
+            }
             static::$config = new ZendConfig((new Xml())->fromFile($filename));
+            static::$root = $root;
         }
+    }
+
+    public function getRoot() : string
+    {
+        return static::$root;
     }
 
     public function get(string $name) : ZendConfig
