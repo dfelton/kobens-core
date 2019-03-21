@@ -15,6 +15,11 @@ class Throttler
         $this->key = $key;
     }
 
+    public function getLimit(string $key) : ?int
+    {
+        return isset(self::$throttles[$key]) ? isset(self::$throttles[$key]['limit']) : null;
+    }
+
     public function addThrottle(string $key, int $limitPerSecond) : void
     {
         if (isset(self::$throttles[$key])) {
