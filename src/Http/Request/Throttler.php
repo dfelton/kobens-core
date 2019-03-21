@@ -10,7 +10,7 @@ class Throttler
 
     protected $key;
 
-    public function __construct(string $key)
+    public function __construct(string $key = null)
     {
         $this->key = $key;
     }
@@ -29,8 +29,16 @@ class Throttler
         ];
     }
 
+    protected function isSetup()
+    {
+        if (!\is_string($this->key) || !isset(self::$throttles[$this->key])) {
+            throw new LogicException(\sprintf('Misconfigurationn error in "%s"', self::class));
+        }
+    }
+
     public function throttle() : void
     {
+        $this->isSetup();
         $time = \time();
         $data = self::$throttles[$this->key];
         switch (true) { // correct, there is no break statements
