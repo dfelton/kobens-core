@@ -53,7 +53,7 @@ class Config
         return static::$config->get($name);
     }
 
-    public function __get(string $name)
+    public function __get(string $name) : ZendConfig
     {
         return $this->get($name);
     }
