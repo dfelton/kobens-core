@@ -20,14 +20,14 @@ class Cache
 
     protected function initCacheDir(string $dir)
     {
-        if (is_dir($dir)) {
-            if (!is_readable($dir)) {
+        if (\is_dir($dir)) {
+            if (!\is_readable($dir)) {
                 throw new Exception("Cache Dir \"$dir\" is not readable.");
             }
-            if (!is_writable($dir)) {
+            if (!\is_writable($dir)) {
                 throw new Exception("Cache Dir \"$dir\" is not writeable.");
             }
-        } elseif (!@mkdir($dir, 0700)) {
+        } elseif (!@\mkdir($dir, 0700)) {
             throw new Exception("Failed to make directory \"$dir\"");
         }
     }
