@@ -5,7 +5,7 @@ namespace Kobens\Core;
 use Zend\Cache\StorageFactory;
 use Kobens\Core\Exception\Exception;
 
-class Cache
+final class Cache
 {
     public function getCache()
     {
@@ -18,7 +18,7 @@ class Cache
         return StorageFactory::factory($config);
     }
 
-    protected function initCacheDir(string $dir)
+    private function initCacheDir(string $dir)
     {
         if (\is_dir($dir)) {
             if (!\is_readable($dir)) {

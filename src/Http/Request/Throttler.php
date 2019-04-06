@@ -4,11 +4,11 @@ namespace Kobens\Core\Http\Request;
 
 use Kobens\Core\Exception\LogicException;
 
-class Throttler
+final class Throttler
 {
     private static $throttles = [];
 
-    protected $key;
+    private $key;
 
     public function __construct(string $key = null)
     {
@@ -34,7 +34,7 @@ class Throttler
         ];
     }
 
-    protected function isSetup()
+    private function isSetup()
     {
         if (!\is_string($this->key) || !isset(self::$throttles[$this->key])) {
             throw new LogicException(\sprintf('Misconfigurationn error in "%s"', self::class));
