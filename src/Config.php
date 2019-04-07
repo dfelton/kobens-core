@@ -49,6 +49,11 @@ final class Config
         return self::$root;
     }
 
+    public function getLogDir() : string
+    {
+        return self::$root.DIRECTORY_SEPARATOR.'var'.DIRECTORY_SEPARATOR.'log';
+    }
+
     public function get(string $name)
     {
         return self::$config->get($name);
