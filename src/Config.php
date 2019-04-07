@@ -8,6 +8,7 @@ use Kobens\Core\Exception\LogicException;
 
 final class Config
 {
+
     /**
      * @var ZendConfig
      */
@@ -48,13 +49,14 @@ final class Config
         return self::$root;
     }
 
-    public function get(string $name) : ZendConfig
+    public function get(string $name)
     {
         return self::$config->get($name);
     }
 
-    public function __get(string $name) : ZendConfig
+    public function __get(string $name)
     {
         return $this->get($name);
     }
+
 }
