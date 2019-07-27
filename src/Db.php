@@ -11,7 +11,7 @@ final class Db
      */
     private static $adapter;
 
-    public function getAdapter() : Adapter
+    public static function getAdapter() : Adapter
     {
         if (!static::$adapter) {
             self::$adapter = new Adapter((new Config())->database->toArray());

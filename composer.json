@@ -1,6 +1,6 @@
 {
     "name": "kobens/kobens-core",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "description": "Core framework for facilitating trades on an exchange.",
     "type": "library",
     "license": "BSD-3-Clause",
@@ -12,7 +12,7 @@
     ],
     "minimum-stability": "stable",
     "require": {
-        "php": "^7.3",
+        "php": "^7.2 || ^7.3",
         "monolog/monolog": "2.0.0-beta1",
         "symfony/console": "^4.2",
         "zendframework/zend-cache": "^2.8",

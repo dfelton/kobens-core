@@ -2,62 +2,71 @@
 
 namespace Kobens\Core\Http\Request;
 
-use Kobens\Core\Exception\LogicException;
+// DROP TABLE IF EXISTS `throttler`;
+// CREATE TABLE `throttler` (
+//     `id` VARCHAR(255) NOT NULL COMMENT 'Key',
+//     `max` INT(10) UNSIGNED NOT NULL COMMENT 'Limit',
+//     `count` INT(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Count',
+//     `time` INT(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Time',
+//     PRIMARY KEY (`id`)
+// ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COMMENT='Throttler';
 
 final class Throttler
 {
-    private static $throttles = [];
+    private $id;
+    private $adapter;
 
-    private $key;
-
-    public function __construct(string $key = null)
+    public function __construct(string $id)
     {
-        $this->key = $key;
-    }
-
-    public function getLimit(string $key) : ?int
-    {
-        return isset(self::$throttles[$key]) ? isset(self::$throttles[$key]['limit']) : null;
-    }
-
-    public function addThrottle(string $key, int $limitPerSecond) : void
-    {
-        if (isset(self::$throttles[$key])) {
-            throw new LogicException("Throttle '$key' already exists.");
-        } elseif ($limitPerSecond <= 0) {
-            throw new LogicException('Limit per second must be greater than zero.');
+        $this->adapter = \Kobens\Core\Db::getAdapter();
+        if (!$this->isKeyValid($id)) {
+            throw new \Exception ("Invalid throttle key '$id'");
         }
-        static::$throttles[$key] = [
-            'limit' => $limitPerSecond,
-            'time' => null,
-            'count' => 0
-        ];
+        $this->id = $id;
     }
 
-    private function isSetup()
+    private function isKeyValid(string $id): bool
     {
-        if (!\is_string($this->key) || !isset(self::$throttles[$this->key])) {
-            throw new LogicException(\sprintf('Misconfigurationn error in "%s"', self::class));
-        }
+        return $this->adapter->query('SELECT COUNT(1) FROM `throttler` WHERE `id` = ?', [$id])->count() === 1;
     }
 
-    public function throttle() : void
+    private function fetchForUpdate()
     {
-        $this->isSetup();
+        $data = $this->adapter->query('SELECT * FROM `throttler` WHERE `id` = ? FOR UPDATE', [$this->id])->toArray()[0];
+        $data['max'] = (int) $data['max'];
+        $data['count'] = (int) $data['count'];
+        $data['time'] = (int) $data['time'];
+        return $data;
+    }
+
+    private function update(int $count, int $time)
+    {
+        $this->adapter->query('UPDATE `throttler` SET `count` = ?, `time` = ? WHERE `id` = ?', [$count, $time, $this->id]);
+    }
+
+    public function throttle(): void
+    {
+        $this->adapter->driver->getConnection()->beginTransaction();
+        $data = $this->fetchForUpdate();
+        $count = $data['count'];
         $time = \time();
-        $data = self::$throttles[$this->key];
         switch (true) { // correct, there is no break statements
-            case $data['time'] === $time && $data['limit'] == $data['count'];
+            case $data['time'] > $time:
+                throw \Exception ('Throttler\'s last usage was in future. Please check system time settings shit is fucked.');
+            case $data['time'] === $time && $data['count'] >= $data['max'];
                 do {
-                    \usleep(50000);
+                    \usleep(0010000); // 1/100th of a second
                     $time = \time();
                 } while ($time === $data['time']);
-            case $data['time'] === null:
+                $count = 0;
+            case $data['time'] === 0:
             case $data['time'] < $time;
-                self::$throttles[$this->key]['time'] = $time;
-                self::$throttles[$this->key]['count'] = 0;
+                $count = 0;
             default:
-                self::$throttles[$this->key]['count']++;
+                $count++;
         }
+
+        $this->update($count, $time);
+        $this->adapter->driver->getConnection()->commit();
     }
 }
