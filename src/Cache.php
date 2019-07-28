@@ -2,16 +2,17 @@
 
 namespace Kobens\Core;
 
+use Zend\Cache\Storage\StorageInterface;
 use Zend\Cache\StorageFactory;
 use Kobens\Core\Exception\Exception;
 
 final class Cache
 {
     /**
-     * @return \Zend\Cache\Storage\StorageInterface
+     * @return StorageInterface
      * @throws Exception
      */
-    public function getCache(): \Zend\Cache\Storage\StorageInterface
+    public function getCache(): StorageInterface
     {
         $cacheConfig = Config::getInstance()->get('cache');
         if ((string) $cacheConfig->adapter->name === 'filesystem') {
