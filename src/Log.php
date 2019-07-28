@@ -16,7 +16,8 @@ final class Log
         if (!isset(self::$logger[$name])) {
             self::$logger[$name] = new Logger($name);
             self::$logger[$name]->pushHandler(new StreamHandler(
-                (new Config())->getRoot().'/var/log/'.$name.'.log',
+                //(new Config())->getRoot().'/var/log/'.$name.'.log',
+                Config::getInstance()->getRootDir().'/var/log/'.$name.'.log',
                 Logger::WARNING
             ));
         }
