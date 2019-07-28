@@ -54,9 +54,6 @@ final class Config
         if ($this->initialized) {
             throw new LogicException(sprintf('The instance of "%s" has already been initialized.', __CLASS__));
         }
-        trigger_error(sprintf(
-            'The method "%s" has been deprecated, use explicit getters instead.', __METHOD__
-        ), \E_USER_DEPRECATED);
 
         $this->rootDir = $rootDir;
         $this->config  = new ZendConfig((new Xml())->fromFile($filename));
