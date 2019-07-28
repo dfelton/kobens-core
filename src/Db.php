@@ -13,7 +13,7 @@ final class Db
 
     public static function getAdapter() : Adapter
     {
-        if (!static::$adapter) {
+        if (!self::$adapter) {
             self::$adapter = new Adapter(Config::getInstance()->get('database')->toArray());
         }
         return self::$adapter;
