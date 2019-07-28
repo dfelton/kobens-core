@@ -54,6 +54,9 @@ final class Config
         if ($this->initialized) {
             throw new LogicException(sprintf('The instance of "%s" has already been initialized.', __CLASS__));
         }
+        trigger_error(sprintf(
+            'The method "%s" has been deprecated, use explicit getters instead.', __METHOD__
+        ), \E_USER_DEPRECATED);
 
         $this->rootDir = $rootDir;
         $this->config  = new ZendConfig((new Xml())->fromFile($filename));
@@ -84,9 +87,9 @@ final class Config
      */
     public function getRoot(): string
     {
-        trigger_error(sprintf(
+        trigger_error(\sprintf(
             'The method "%s" has been deprecated, use %s::getRootDir() instead.', __METHOD__, __CLASS__
-        ));
+        ), \E_USER_DEPRECATED);
         return $this->rootDir;
     }
 
@@ -113,7 +116,9 @@ final class Config
      */
     public function __get(string $name)
     {
-        trigger_error(sprintf('The method "%s" has been deprecated, use explicit getters instead.', __METHOD__));
+        trigger_error(sprintf(
+            'The method "%s" has been deprecated, use explicit getters instead.', __METHOD__
+        ), \E_USER_DEPRECATED);
         return $this->get($name);
     }
 
