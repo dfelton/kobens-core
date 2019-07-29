@@ -9,7 +9,7 @@ namespace Kobens\Core\Http\Request;
 //     `count` INT(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Count',
 //     `time` INT(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Time',
 //     PRIMARY KEY (`id`)
-// ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COMMENT='Throttler';
+// ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Throttler';
 
 final class Throttler
 {
@@ -27,12 +27,16 @@ final class Throttler
 
     private function isKeyValid(string $id): bool
     {
-        return $this->adapter->query('SELECT COUNT(1) FROM `throttler` WHERE `id` = ?', [$id])->count() === 1;
+        /** @var \Zend\Db\ResultSet\ResultSet $resultSet */
+        $resultSet = $this->adapter->query('SELECT COUNT(id) AS "rows" FROM `throttler` WHERE `id` = ?', [$id]);
+        return $resultSet->toArray()[0]['rows'] === '1';
     }
 
     private function fetchForUpdate()
     {
-        $data = $this->adapter->query('SELECT * FROM `throttler` WHERE `id` = ? FOR UPDATE', [$this->id])->toArray()[0];
+        $resultSet = $this->adapter->query('SELECT * FROM `throttler` WHERE `id` = ? FOR UPDATE', [$this->id]);
+        $data = $resultSet->toArray();
+        $data = $data[0];
         $data['max'] = (int) $data['max'];
         $data['count'] = (int) $data['count'];
         $data['time'] = (int) $data['time'];
