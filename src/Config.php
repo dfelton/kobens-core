@@ -4,18 +4,19 @@ namespace Kobens\Core;
 
 use Zend\Config\Config as ZendConfig;
 use Zend\Config\Reader\Xml;
-use Kobens\Core\Exception\LogicException;
 
 /**
  * Class Config
  * @package Kobens\Core
+ *
+ * TODO: getLogDir and getRootDir are starting to feel like they don't belong here. Single Purpose Object.
  */
 final class Config
 {
     /**
-     * @var bool
+     * @var Config
      */
-    private $initialized;
+    private static $instance;
 
     /**
      * @var string
@@ -27,46 +28,55 @@ final class Config
      */
     private $config;
 
-    private function __construct()
-    {
-        $this->initialized = false;
-    }
+    private function __construct() { }
 
     /**
      * @return Config
      */
     public static function getInstance(): self
     {
-        static $instance = null;
-        if (null === $instance) {
-            $instance = new self();
+        if (!self::$instance) {
+            self::$instance = new self();
         }
-        return $instance;
+        return self::$instance;
+    }
+
+    /**
+     *
+     * @param string $filename
+     * @throws \LogicException
+     * @throws \Exception
+     * @throws \Zend\Config\Exception\RuntimeException
+     */
+    public function setConfig(string $filename): void
+    {
+        switch (true) {
+            case $this->config !== null:
+                throw new \LogicException('Config is already set.');
+            case !\is_file($filename):
+                throw new \Exception(\sprintf('"%s" is not a file.'));
+            case !\is_readable($filename):
+                throw new \Exception(\sprintf('"%s" is not readable.'));
+        }
+        $this->config = new ZendConfig((new Xml())->fromFile($filename));
     }
 
     /**
      * @param string $filename
-     * @param string $rootDir
-     * @throws LogicException
+     * @throws \LogicException
+     * @throws \Exception
      */
-    public function initialize(string $filename, string $rootDir): void
+    public function setRootDir(string $filename): void
     {
-        if ($this->initialized) {
-            throw new LogicException(sprintf('The instance of "%s" has already been initialized.', __CLASS__));
+        switch (true) {
+            case $this->rootDir !== null:
+                throw new \LogicException('Root directory is already set.');
+            case !\is_dir($filename):
+                throw new \Exception(\sprintf('"%s" is not a directory.'));
+            case !\is_readable($filename):
+                throw new \Exception(\sprintf('"%s" is not readable.'));
         }
-
-        $this->rootDir = $rootDir;
-        $this->config  = new ZendConfig((new Xml())->fromFile($filename));
-
-        $this->initialized = true;
-    }
-
-    /**
-     * @return bool
-     */
-    public function isInitialized(): bool
-    {
-        return $this->initialized;
+        $this->rootDir = $filename;
     }
 
     /**
@@ -77,46 +87,18 @@ final class Config
         return $this->rootDir;
     }
 
-    // OLD METHODS
-    /**
-     * @return string
-     * @deprecated
-     */
-    public function getRoot(): string
-    {
-        trigger_error(\sprintf(
-            'The method "%s" has been deprecated, use %s::getRootDir() instead.', __METHOD__, __CLASS__
-        ), \E_USER_DEPRECATED);
-        return $this->rootDir;
-    }
-
     public function getLogDir(): string
     {
         return $this->rootDir.DIRECTORY_SEPARATOR.'var'.DIRECTORY_SEPARATOR.'log';
     }
 
     /**
-     * Still in use, but this has been slightly changed to use non-static properties
-     *
      * @param string $name
      * @return mixed
      */
     public function get(string $name)
     {
         return $this->config->get($name);
-    }
-
-    /**
-     * @param string $name
-     * @return mixed
-     * @deprecated
-     */
-    public function __get(string $name)
-    {
-        trigger_error(sprintf(
-            'The method "%s" has been deprecated, use explicit getters instead.', __METHOD__
-        ), \E_USER_DEPRECATED);
-        return $this->get($name);
     }
 
 }
