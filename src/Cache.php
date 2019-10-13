@@ -2,41 +2,29 @@
 
 namespace Kobens\Core;
 
-use Zend\Cache\Storage\StorageInterface;
 use Zend\Cache\StorageFactory;
-use Kobens\Core\Exception\Exception;
+use Zend\Cache\Storage\StorageInterface;
 
 final class Cache
 {
     /**
-     * @return StorageInterface
-     * @throws Exception
+     * @var StorageInterface
      */
-    public function getCache(): StorageInterface
-    {
-        $cacheConfig = Config::getInstance()->get('cache');
-        if ((string) $cacheConfig->adapter->name === 'filesystem') {
-            $this->initCacheDir($cacheConfig->adapter->options->cache_dir);
-        }
-
-        return StorageFactory::factory($cacheConfig);
-    }
+    private static $instance;
 
     /**
-     * @param string $dir
-     * @throws Exception
+     * @return StorageInterface
      */
-    private function initCacheDir(string $dir): void
+    public static function getInstance(): StorageInterface
     {
-        if (\is_dir($dir)) {
-            if (!\is_readable($dir)) {
-                throw new Exception("Cache Dir \"$dir\" is not readable.");
-            }
-            if (!\is_writable($dir)) {
-                throw new Exception("Cache Dir \"$dir\" is not writable.");
-            }
-        } elseif (!@\mkdir($dir, 0700)) {
-            throw new Exception("Failed to make directory \"$dir\"");
+        if (!self::$instance) {
+            $dir = Config::getInstance()->getRootDir().'/var/cache';
+            self::$instance = StorageFactory::factory([
+                'adapter' => 'filesystem',
+                'options' => ['cache_dir' => $dir]
+            ]);
         }
+        return self::$instance;
     }
+
 }
