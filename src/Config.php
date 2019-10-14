@@ -11,7 +11,7 @@ use Zend\Config\Reader\Xml;
  *
  * TODO: getLogDir and getRootDir are starting to feel like they don't belong here. Single Purpose Object.
  */
-final class Config
+final class Config implements ConfigInterface
 {
     /**
      * @var Config
