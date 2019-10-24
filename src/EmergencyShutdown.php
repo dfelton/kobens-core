@@ -21,10 +21,22 @@ final class EmergencyShutdown implements EmergencyShutdownInterface
         return \file_exists($this->getFilename());
     }
 
-    public function enableShutdownMode(string $message): void
+    public function enableShutdownMode(\Exception $e): void
     {
+        \touch($this->getFilename());
         $handle = \fopen($this->getFilename(), 'a');
-        \fwrite($handle, $message);
+        \fwrite($handle, 'Shutdown Enabled at: '.(new \DateTime())->format('Y-m-d H:i:s').PHP_EOL);
+        do {
+            \fwrite($handle, 'Exception: '.\get_class($e).PHP_EOL);
+            \fwrite($handle, 'Code: '.$e->getCode().PHP_EOL);
+            \fwrite($handle, 'Message: '.$e->getMessage().PHP_EOL);
+            \fwrite($handle, 'Strace:'.PHP_EOL.$e->getTraceAsString().PHP_EOL);
+            $e = $e->getPrevious();
+            if ($e instanceof \Exception) {
+                \fwrite($handle, PHP_EOL.'Previous Exception:'.PHP_EOL);
+            }
+        } while ($e instanceof \Exception);
+        \fwrite($handle, PHP_EOL.PHP_EOL);
         \fclose($handle);
     }
 
