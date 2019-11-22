@@ -7,13 +7,18 @@ final class EmergencyShutdown implements EmergencyShutdownInterface
     private const FILENAME = 'emergency_shutdown';
 
     /**
-     * @var ConfigInterface
+     * @var string
      */
-    private $config;
+    private $dir;
 
-    public function __construct(ConfigInterface $config)
+    public function __construct(string $dir)
     {
-        $this->config = $config;
+        if (!\is_dir($dir)) {
+            throw new \Exception("'$dir' is not a directory");
+        } elseif (!\is_writeable($dir)) {
+            throw new \Exception("'$dir' is not writtable");
+        }
+        $this->dir = $dir;
     }
 
     public function isShutdownModeEnabled(): bool
@@ -42,6 +47,6 @@ final class EmergencyShutdown implements EmergencyShutdownInterface
 
     private function getFilename(): string
     {
-        return $this->config->getRootDir().'/var/'.self::FILENAME;
+        return $this->dir.'/'.self::FILENAME;
     }
 }
