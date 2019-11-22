@@ -11,7 +11,7 @@ namespace Kobens\Core\Http\Request;
 //     PRIMARY KEY (`id`)
 // ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Throttler';
 
-final class Throttler
+final class Throttler implements ThrottlerInterface
 {
     private $id;
     private $adapter;
@@ -19,28 +19,17 @@ final class Throttler
     public function __construct(string $id)
     {
         $this->adapter = \Kobens\Core\Db::getAdapter();
-        if (!$this->isKeyValid($id)) {
-            throw new \Exception ("Invalid throttle key '$id'");
-        }
         $this->id = $id;
-    }
-
-    private function isKeyValid(string $id): bool
-    {
-        /** @var \Zend\Db\ResultSet\ResultSet $resultSet */
-        $resultSet = $this->adapter->query('SELECT COUNT(id) AS "rows" FROM `throttler` WHERE `id` = ?', [$id]);
-        return $resultSet->toArray()[0]['rows'] === '1';
     }
 
     private function fetchForUpdate()
     {
-        $resultSet = $this->adapter->query('SELECT * FROM `throttler` WHERE `id` = ? FOR UPDATE', [$this->id]);
-        $data = $resultSet->toArray();
-        $data = $data[0];
-        $data['max'] = (int) $data['max'];
-        $data['count'] = (int) $data['count'];
-        $data['time'] = (int) $data['time'];
-        return $data;
+        $data = $this->adapter->query('SELECT * FROM `throttler` WHERE `id` = ? FOR UPDATE', [$this->id])->current();
+        return [
+            'max' => (int) $data->max,
+            'count' => (int) $data->count,
+            'time' => (int) $data->time,
+        ];
     }
 
     private function update(int $count, int $time)
