@@ -2,6 +2,8 @@
 
 namespace Kobens\Core\Http\Request;
 
+use Kobens\Core\Exception\Http\Request\Throttler\InvalidIdentifierException;
+
 // DROP TABLE IF EXISTS `throttler`;
 // CREATE TABLE `throttler` (
 //     `id` VARCHAR(255) NOT NULL COMMENT 'Key',
@@ -25,6 +27,9 @@ final class Throttler implements ThrottlerInterface
     private function fetchForUpdate()
     {
         $data = $this->adapter->query('SELECT * FROM `throttler` WHERE `id` = ? FOR UPDATE', [$this->id])->current();
+        if ($data === null) {
+            throw new InvalidIdentifierException("Invalid Throttler ID '{$this->id}'.");
+        }
         return [
             'max' => (int) $data->max,
             'count' => (int) $data->count,
@@ -45,7 +50,7 @@ final class Throttler implements ThrottlerInterface
         $time = \time();
         switch (true) { // correct, there is no break statements
             case $data['time'] > $time:
-                throw \Exception ('Throttler\'s last usage was in future. Please check system time settings shit is fucked.');
+                throw \Exception ("Last usage for throttler ID '{$this->id}' is in the future. Please check system time settings shit is fucked.");
             case $data['time'] === $time && $data['count'] >= $data['max'];
                 do {
                     \usleep(0010000); // 1/100th of a second
