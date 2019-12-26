@@ -4,6 +4,7 @@ namespace Kobens\Core\Http\Request\Throttler\Adapter;
 
 use Kobens\Core\Exception\LogicException;
 use Kobens\Core\Exception\Http\Request\Throttler\InvalidIdentifierException;
+use Kobens\Core\Exception\Http\Request\Throttler\LockWaitTimeoutException;
 use Kobens\Core\Http\Request\Throttler\AdapterInterface;
 use Kobens\Core\Http\Request\Throttler\DataModel;
 use Kobens\Core\Http\Request\Throttler\DataModelInterface;
@@ -34,11 +35,17 @@ final class MariaDb implements AdapterInterface
     private $adapter;
 
     /**
+     * @var \Zend\Db\Adapter\Driver\ConnectionInterface
+     */
+    private $connection;
+
+    /**
      * @param Adapter $adapter
      */
     public function __construct(Adapter $adapter)
     {
         $this->adapter = $adapter;
+        $this->connection = $adapter->driver->getConnection();
     }
 
     /**
@@ -50,7 +57,7 @@ final class MariaDb implements AdapterInterface
         if ($this->isInTransaction()) {
             throw new LogicException('Cannot get data while in transaction.');
         }
-        $this->adapter->driver->getConnection()->beginTransaction();
+        $this->connection->beginTransaction();
         $data = $this->getRecord($id);
         if ($data === null) {
             throw new InvalidIdentifierException("Invalid Throttler ID '{$id}'.");
@@ -71,7 +78,7 @@ final class MariaDb implements AdapterInterface
             'UPDATE `throttler` SET `count` = ?, `time` = ? WHERE `id` = ?',
             [$count, $time, $id]
         );
-        $this->adapter->driver->getConnection()->commit();
+        $this->connection->commit();
     }
 
     /**
@@ -79,8 +86,8 @@ final class MariaDb implements AdapterInterface
      */
     private function isInTransaction(): bool
     {
-        $stmt = $this->adapter->query('SHOW VARIABLES LIKE "in_transaction"')->execute()->current();
-        return (bool) (int) $stmt['Value'];
+        $data = $this->adapter->query('SHOW VARIABLES LIKE "in_transaction"')->execute()->current();
+        return (bool) $data['Value'];
     }
 
     /**
@@ -96,10 +103,10 @@ final class MariaDb implements AdapterInterface
             try {
                 $data = $this->adapter->query('SELECT * FROM `throttler` WHERE `id` = ? FOR UPDATE', [$id])->current();
             } catch (InvalidQueryException $e) {
-                if (   $e->getMessage() !== self::LOCK_WAIT_MESSAGE
-                    || $attempts >= self::LOCK_WAIT_MAX_ATTEMPTS
-                ) {
+                if ($e->getMessage() !== self::LOCK_WAIT_MESSAGE) {
                     throw $e;
+                } elseif ($attempts >= self::LOCK_WAIT_MAX_ATTEMPTS) {
+                    throw new LockWaitTimeoutException('Lock wait timeout retry limit reached.', 0, $e);
                 }
                 ++$attempts;
             }
