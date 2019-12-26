@@ -2,69 +2,54 @@
 
 namespace Kobens\Core\Http\Request;
 
-use Kobens\Core\Exception\Http\Request\Throttler\InvalidIdentifierException;
-
-// DROP TABLE IF EXISTS `throttler`;
-// CREATE TABLE `throttler` (
-//     `id` VARCHAR(255) NOT NULL COMMENT 'Key',
-//     `max` INT(10) UNSIGNED NOT NULL COMMENT 'Limit',
-//     `count` INT(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Count',
-//     `time` INT(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Time',
-//     PRIMARY KEY (`id`)
-// ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Throttler';
+use Kobens\Core\Http\Request\Throttler\AdapterInterface;
 
 final class Throttler implements ThrottlerInterface
 {
-    private $id;
+    /**
+     * @var AdapterInterface
+     */
     private $adapter;
 
-    public function __construct(string $id)
+    /**
+     * @var string
+     */
+    private $id;
+
+    /**
+     * @param AdapterInterface $adapter
+     * @param string $id
+     */
+    public function __construct(AdapterInterface $adapter, string $id)
     {
-        $this->adapter = \Kobens\Core\Db::getAdapter();
+        $this->adapter = $adapter;
         $this->id = $id;
     }
 
-    private function fetchForUpdate()
-    {
-        $data = $this->adapter->query('SELECT * FROM `throttler` WHERE `id` = ? FOR UPDATE', [$this->id])->current();
-        if ($data === null) {
-            throw new InvalidIdentifierException("Invalid Throttler ID '{$this->id}'.");
-        }
-        return [
-            'max' => (int) $data->max,
-            'count' => (int) $data->count,
-            'time' => (int) $data->time,
-        ];
-    }
-
-    private function update(int $count, int $time)
-    {
-        $this->adapter->query('UPDATE `throttler` SET `count` = ?, `time` = ? WHERE `id` = ?', [$count, $time, $this->id]);
-    }
-
+    /**
+     * {@inheritDoc}
+     * @see \Kobens\Core\Http\Request\ThrottlerInterface::throttle()
+     */
     public function throttle(): void
     {
-        $this->adapter->driver->getConnection()->beginTransaction();
-        $data = $this->fetchForUpdate();
-        $count = $data['count'];
+        $data = $this->adapter->get($this->id);
+        $count = $data->getCount();
         $time = \time();
         switch (true) { // correct, there is no break statements
-            case $data['time'] > $time:
-                throw \Exception ("Last usage for throttler ID '{$this->id}' is in the future. Please check system time settings shit is fucked.");
-            case $data['time'] === $time && $data['count'] >= $data['max'];
+            case $data->getTime() > $time:
+                throw \Exception("Last usage for throttler ID '{$this->id}' is in the future. Please check system time settings shit is fucked.");
+            case $data->getTime() === $time && $data->getCount() >= $data->getMax();
                 do {
                     \usleep(0010000); // 1/100th of a second
                     $time = \time();
-                } while ($time === $data['time']);
+                } while ($time === $data->getTime());
                 $count = 0;
-            case $data['time'] === 0:
-            case $data['time'] < $time;
+            case $data->getTime() < $time;
+            case $data->getTime() === 0:
                 $count = 0;
             default:
                 $count++;
         }
-
-        $this->update($count, $time);
-        $this->adapter->driver->getConnection()->commit();
+        $this->adapter->set($data->getId(), $count, $time);
     }
 }
