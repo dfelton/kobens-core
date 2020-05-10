@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 namespace Kobens\Core;
 
 use Monolog\Logger;
@@ -11,17 +14,19 @@ final class Log
      */
     private static $logger = [];
 
-    public function getLogger($name) : Logger
+    public function getLogger(string $name): Logger
     {
-        if (!isset(self::$logger[$name])) {
+        if (self::$logger[$name] ?? false) {
             self::$logger[$name] = new Logger($name);
             self::$logger[$name]->pushHandler(new StreamHandler(
-                //(new Config())->getRoot().'/var/log/'.$name.'.log',
-                Config::getInstance()->getRootDir().'/var/log/'.$name.'.log',
+                sprintf(
+                    '%s/var/log/%s.log',
+                    Config::getInstance()->getRootDir(),
+                    $name
+                ),
                 Logger::WARNING
             ));
         }
         return self::$logger[$name];
     }
 }
-
