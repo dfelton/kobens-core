@@ -8,14 +8,14 @@ class Response implements ResponseInterface
 {
     private string $body;
 
-    private int $code;
+    private int $responseCode;
 
     public function __construct(
         string $body,
-        int $code
+        int $responseCode
     ) {
         $this->body = $body;
-        $this->code = $code;
+        $this->responseCode = $responseCode;
     }
 
     public function getBody(): string
@@ -23,8 +23,16 @@ class Response implements ResponseInterface
         return $this->body;
     }
 
-    public function getCode(): int
+    public function getResponseCode(): int
     {
-        return $this->code;
+        return $this->responseCode;
+    }
+
+    public function jsonSerialize()
+    {
+        return [
+            'body' => $this->body,
+            'response_code' => $this->responseCode
+        ];
     }
 }
