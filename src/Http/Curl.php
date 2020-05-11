@@ -17,11 +17,16 @@ final class Curl implements CurlInterface
         $this->logger = $logger;
     }
 
+    /**
+     * @param string $url
+     * @param array $config
+     * @return ResponseInterface
+     * @throws CurlException
+     */
     public function request(string $url, array $config = []): ResponseInterface
     {
-        $ch = \curl_init($url);
-
         $config[CURLOPT_RETURNTRANSFER] = true;
+        $ch = \curl_init($url);
 
         foreach ($config as $option => $value) {
             \curl_setopt($ch, $option, $value);
@@ -29,14 +34,18 @@ final class Curl implements CurlInterface
 
         $body = (string) \curl_exec($ch);
         $code = (int) \curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+        $curlErrNo = \curl_errno($ch);
 
         $data = [
             'url' => $url,
-            'curl_errno' => \curl_errno($ch),
-            'curl_error' => \curl_error($ch),
             'curlinfo_connect_time' => \curl_getinfo($ch, CURLINFO_CONNECT_TIME),
             'curlinfo_total_time' => \curl_getinfo($ch, CURLINFO_TOTAL_TIME),
         ];
+
+        if ($curlErrNo !== CURLE_OK) {
+            $data['curl_errno'] = $curlErrNo;
+            $data['curl_error'] = \curl_error($ch);
+        }
 
         \curl_close($ch);
 
@@ -45,8 +54,8 @@ final class Curl implements CurlInterface
             $this->logger->info($json);
         }
 
-        if ($data['curl_errno'] !== CURLE_OK) {
-            throw new CurlException($data['curl_error'], $data['curl_errno'], $json ? new \Exception($json) : null);
+        if ($curlErrNo !== CURLE_OK) {
+            throw new CurlException($data['curl_error'], $curlErrNo, $json ? new \Exception($json) : null);
         }
 
         return new Response($body, $code);
