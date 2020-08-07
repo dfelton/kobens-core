@@ -30,6 +30,7 @@ final class EmergencyShutdown implements EmergencyShutdownInterface
     {
         \touch($this->getFilename());
         $handle = \fopen($this->getFilename(), 'a');
+        \flock($handle, LOCK_EX);
         \fwrite($handle, 'Shutdown Enabled at: '.(new \DateTime())->format('Y-m-d H:i:s').PHP_EOL);
         do {
             \fwrite($handle, 'Exception: '.\get_class($e).PHP_EOL);
@@ -42,6 +43,7 @@ final class EmergencyShutdown implements EmergencyShutdownInterface
             }
         } while ($e instanceof \Exception);
         \fwrite($handle, PHP_EOL.PHP_EOL);
+        \flock($handle, LOCK_UN);
         \fclose($handle);
     }
 
