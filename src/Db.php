@@ -18,4 +18,15 @@ final class Db
         }
         return self::$adapter;
     }
+
+    /**
+     * Note: only works in Mariadb, not MySQL
+     *
+     * @return bool
+     */
+    public static function isInTransaction(): bool
+    {
+        $data = self::getAdapter()->query('SHOW VARIABLES LIKE "in_transaction"')->execute()->current();
+        return (bool) $data['Value'];
+    }
 }
