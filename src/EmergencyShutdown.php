@@ -14,7 +14,7 @@ final class EmergencyShutdown implements EmergencyShutdownInterface
     public function __construct(string $dir)
     {
         if (!\is_dir($dir)) {
-            throw new \Exception("'$dir' is not a directory");
+            throw new \InvalidArgumentException("'$dir' is not a directory");
         } elseif (!\is_writeable($dir)) {
             throw new \Exception("'$dir' is not writtable");
         }
