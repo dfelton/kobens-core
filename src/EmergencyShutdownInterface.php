@@ -6,5 +6,5 @@ interface EmergencyShutdownInterface
 {
     public function isShutdownModeEnabled(): bool;
 
-    public function enableShutdownMode(\Exception $e): void;
+    public function enableShutdownMode(\Throwable $e): void;
 }
