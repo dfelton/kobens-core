@@ -21,8 +21,14 @@ use Zend\Db\Adapter\Exception\InvalidQueryException;
 // ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Throttler';
 
 /**
- * TODO Maybe some verification during instantiation of necessary MariaDb environment variables?
- * TODO If we configure the throttler to use it's own connection, maybe skip the in_transaction check?
+ * MariaDb based Throttler Adapter.
+ *
+ * TODO: Accept Db credentials and instantiate our own instance.
+ *   This ensures there is no question whether or not the adapter
+ *   has its own connection to the database. Which is necessary
+ *   for proper functionality. (we cannot allow other areas of
+ *   the application to use the same instance and possibly have
+ *   already started a transaction with the database.)
  */
 final class MariaDb implements AdapterInterface
 {
@@ -39,6 +45,9 @@ final class MariaDb implements AdapterInterface
      */
     private $connection;
 
+    private static bool $inTransaction = false;
+    private static string $activeTransaction = '';
+
     /**
      * @param Adapter $adapter
      */
@@ -54,9 +63,15 @@ final class MariaDb implements AdapterInterface
      */
     public function get(string $id): DataModelInterface
     {
-        if ($this->isInTransaction()) {
-            throw new LogicException('Cannot get data while in transaction.');
+        if (self::$inTransaction) {
+            throw new LogicException(sprintf(
+                'Throttling transaction already started. It is required that the active transaction be closed out with "%s::set(\'%s\') first.',
+                self::class,
+                self::$activeTransaction
+            ));
         }
+        self::$inTransaction = true;
+        self::$activeTransaction = $id;
         $this->connection->beginTransaction();
         $data = $this->getRecord($id);
         if ($data === null) {
@@ -71,23 +86,25 @@ final class MariaDb implements AdapterInterface
      */
     public function set(string $id, int $count, int $time): void
     {
-        if (!$this->isInTransaction()) {
-            throw new LogicException('Can only set data while in transaction.');
+        if (!self::$inTransaction) {
+            throw new LogicException(spritf(
+                'No active throttling transaction started. It is required that the count be explicitly fetched via "%s::get(\'%s\') first."',
+                self::class,
+                $id
+            ));
+        } elseif (self::$activeTransaction !== $id) {
+            throw new LogicException(spritf(
+                'Throttling transaction for "%s" must be closed out before attempting to set anything else.',
+                self::$activeTransaction
+            ));
         }
         $result = $this->adapter->query(
             'UPDATE `throttler` SET `count` = ?, `time` = ? WHERE `id` = ?',
             [$count, $time, $id]
         );
+        self::$activeTransaction = '';
+        self::$inTransaction = false;
         $this->connection->commit();
-    }
-
-    /**
-     * @return bool
-     */
-    private function isInTransaction(): bool
-    {
-        $data = $this->adapter->query('SHOW VARIABLES LIKE "in_transaction"')->execute()->current();
-        return (bool) $data['Value'];
     }
 
     /**
@@ -113,5 +130,4 @@ final class MariaDb implements AdapterInterface
         } while ($data === false);
         return $data;
     }
-
 }
