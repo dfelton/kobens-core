@@ -9,11 +9,11 @@ use Zend\Cache\Storage\StorageInterface;
 
 final class Cache
 {
-    private static StorageInterface $instance;
+    private static ?StorageInterface $instance = null;
 
     public static function getInstance(): StorageInterface
     {
-        if (!self::$instance) {
+        if (self::$instance === null) {
             $dir = Config::getInstance()->getRootDir().'/var/cache';
             self::$instance = StorageFactory::factory([
                 'adapter' => 'filesystem',
